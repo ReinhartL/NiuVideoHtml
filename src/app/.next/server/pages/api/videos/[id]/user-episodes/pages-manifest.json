@@ -1,0 +1,3 @@
+{
+  "/api/videos/[id]/user-episodes": "pages/api/videos/[id]/user-episodes.js"
+}

@@ -1,0 +1,9 @@
+支付状态
+
+用户支付表:
+userId: 用户 ID
+episodeId: 剧集 ID
+isPaid: 布尔值，表示用户是否已支付、、、
+
+
+

@@ -1,0 +1,3 @@
+{
+  "/api/user/update-username": "pages/api/user/update-username.js"
+}
