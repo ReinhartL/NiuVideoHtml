@@ -26,5 +26,9 @@ declare module 'dplayer' {
   export default class DPlayer {
     constructor(options: DPlayerOptions);
     destroy(): void;
+    play(): void;
+    pause(): void;
+    on(event: string, callback: () => void): void;
+    off(event: string, callback?: () => void): void;
   }
 } 

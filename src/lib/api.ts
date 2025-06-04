@@ -1,4 +1,5 @@
-export const BASE_URL = 'https://hkaveixilfpv.sealoshzh.site/api';
+// export const BASE_URL = 'https://hkaveixilfpv.sealoshzh.site/api';
+export const BASE_URL = 'http://43.163.113.244/api';
 
 export const api = {
   // 用户认证相关
