@@ -45,7 +45,7 @@ async function fetchVideoData(id: string, ep: string): Promise<VideoData> {
       title: videoData.data.title,
       displayName: videoData.data.displayName,
       cover: videoData.data.cover,
-      address: episodeData.data.address,
+      address: episodeData.data.playurl,
       freeEpisodes: videoData.data.freeEpisodes, // 从 API 获取免费剧集数量
     };
   } catch (error) {
@@ -104,7 +104,11 @@ export default function VideoPage() {
   }
 
   // 从 episode.address 提取最后三位数字并转换为整数
-  const episodeNumber = parseInt(videoData.address.slice(-7, -4), 10); // 假设地址格式为 .../003.mp4
+  // 取出问号前的部分
+  const urlWithoutParams = videoData.address?.split('?')[0];
+  // 匹配最后的三位数字
+  const match = urlWithoutParams.match(/(\\d{3})\\.mp4$/);
+  const episodeNumber = match ? parseInt(match[1], 10) : 0;
   const isFreeEpisode = episodeNumber <= videoData.freeEpisodes;
 
   // Find the current episode in the episodes list
