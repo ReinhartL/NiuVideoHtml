@@ -49,6 +49,8 @@ export default function Home() {
   const [newData, setNewData] = useState<ProcessedVideoItem[]>([]);
   const [rankData, setRankData] = useState<ProcessedVideoItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [retryTimer, setRetryTimer] = useState<NodeJS.Timeout | null>(null);
+  const [isConfigLoaded, setIsConfigLoaded] = useState(false);
   const router = useRouter();
   
   const { user, loading: authLoading, fetchUserInfo } = useAuth();
@@ -127,10 +129,13 @@ export default function Home() {
     return videoIds.map(id => videoMap.get(id)).filter(item => item !== null) as ProcessedVideoItem[];
   };
 
-  // 获取首页配置数据的方法（优化版）
-  const fetchHomeConfig = async () => {
+  // 获取首页配置数据的方法（优化版 + 重试机制）
+  const fetchHomeConfig = async (isRetry = false) => {
     try {
-      setLoading(true);
+      if (!isRetry) {
+        setLoading(true);
+      }
+      
       const response = await axios.get(`${BASE_URL}/home-config`);
       
       const configData: HomeConfigData = response.data.data || response.data;
@@ -156,9 +161,30 @@ export default function Home() {
       setHotData(hot);
       setNewData(newList);
       setRankData(rank);
+      
+      // 标记配置加载成功
+      setIsConfigLoaded(true);
+      
+      // 清除重试定时器
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+        setRetryTimer(null);
+      }
 
       return response.data;
     } catch (error) {
+      console.error('获取首页配置失败:', error);
+      
+      // 如果配置还没有加载成功，则设置重试
+      if (!isConfigLoaded) {
+        const timer = setTimeout(() => {
+          console.log('重试获取首页配置...');
+          fetchHomeConfig(true);
+        }, 3000); // 3秒后重试
+        
+        setRetryTimer(timer);
+      }
+      
       return null;
     } finally {
       setLoading(false);
@@ -173,6 +199,14 @@ export default function Home() {
     if (user && user.id) {
       fetchUserInfo();
     }
+    
+    // 清理函数：组件卸载时清除定时器
+    return () => {
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+        setRetryTimer(null);
+      }
+    };
   }, [user?.id]); // 依赖于 user.id
   
   useEffect(() => {
