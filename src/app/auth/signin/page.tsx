@@ -19,7 +19,7 @@ export default function SignIn() {
 
     try {
       await login(username, password);
-      router.push('/userpage'); // 登录成功后跳转到首页
+      router.replace('/userpage'); // 登录成功后跳转到首页
     } catch (err) {
       setError(err instanceof Error ? err.message : '登录失败');
     } finally {
@@ -85,8 +85,11 @@ export default function SignIn() {
 
           <div className="text-sm text-center">
             <a
-              href="/auth/signup"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
+              onClick={(e) => {
+                e.preventDefault();
+                router.replace('/auth/signup');
+              }}
+              className="font-medium text-indigo-600 hover:text-indigo-500 cursor-pointer"
             >
               还没有账号？立即注册
             </a>

@@ -4,7 +4,7 @@ import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { useState, useEffect } from 'react';
 import Slider from 'react-slick';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 import { BASE_URL } from '@/lib/api';
@@ -20,19 +20,12 @@ const styles = `
 `;
 
 // 定义数据类型
-interface VideoData {
-  id: string;
-  title: string;
-  cover: string;
-  episodes: Array<{ id: string; episodeNumber: number; }>;
-}
-
 interface HomeConfigData {
   id: string;
-  carousel: string[];
-  hot: string[];
-  new: string[];
-  rank: string[];
+  carousel: ProcessedVideoItem[];
+  hot: ProcessedVideoItem[];
+  new: ProcessedVideoItem[];
+  rank: ProcessedVideoItem[];
 }
 
 interface ProcessedVideoItem {
@@ -52,6 +45,7 @@ export default function Home() {
   const [retryTimer, setRetryTimer] = useState<NodeJS.Timeout | null>(null);
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   
   const { user, loading: authLoading, fetchUserInfo } = useAuth();
   const [isLoggedIn, setIsLoggedIn] = useState(!!user);
@@ -68,68 +62,7 @@ export default function Home() {
     };
   }, []);
 
-  // 批量获取视频详情的优化方法
-  const batchGetVideoDetails = async (videoIds: string[]): Promise<Map<string, ProcessedVideoItem>> => {
-    const uniqueIds = [...new Set(videoIds)]; // 去重
-    const videoMap = new Map<string, ProcessedVideoItem>();
-    
-    // 并发获取所有视频详情，但控制并发数量避免服务器压力
-    const batchSize = 5; // 每批处理5个请求
-    for (let i = 0; i < uniqueIds.length; i += batchSize) {
-      const batch = uniqueIds.slice(i, i + batchSize);
-      
-      const batchPromises = batch.map(async (videoId) => {
-        try {
-          const response = await axios.get(`${BASE_URL}/videos/${videoId}`);
-          const videoData: VideoData = response.data.data || response.data;
-          
-          // 找到第一集的ID
-          const firstEpisode = videoData.episodes?.find(ep => ep.episodeNumber === 1) || videoData.episodes?.[0];
-          
-          if (!firstEpisode) {
-            return null;
-          }
-
-          // 拼接跳转链接地址
-          const link = `/${videoId}/${firstEpisode.id}`;
-
-          // 处理封面数据 - 确保URL完整性
-          let coverUrl = videoData.cover;
-          if (coverUrl && !coverUrl.startsWith('http')) {
-            if (coverUrl.startsWith('/')) {
-              coverUrl = `${BASE_URL.replace('/api', '')}${coverUrl}`;
-            } else {
-              coverUrl = `${BASE_URL.replace('/api', '')}/${coverUrl}`;
-            }
-          }
-
-          const processedItem: ProcessedVideoItem = {
-            id: videoData.id,
-            title: videoData.title,
-            cover: coverUrl || '',
-            link: link
-          };
-
-          videoMap.set(videoId, processedItem);
-          return processedItem;
-        } catch (error) {
-          return null;
-        }
-      });
-
-      // 等待当前批次完成再处理下一批
-      await Promise.all(batchPromises);
-    }
-    
-    return videoMap;
-  };
-
-  // 根据ID列表从map中提取对应的视频数据
-  const extractVideosByIds = (videoIds: string[], videoMap: Map<string, ProcessedVideoItem>): ProcessedVideoItem[] => {
-    return videoIds.map(id => videoMap.get(id)).filter(item => item !== null) as ProcessedVideoItem[];
-  };
-
-  // 获取首页配置数据的方法（优化版 + 重试机制）
+  // 获取首页配置数据的方法（简化版，直接使用返回的视频信息）
   const fetchHomeConfig = async (isRetry = false) => {
     try {
       if (!isRetry) {
@@ -140,27 +73,11 @@ export default function Home() {
       
       const configData: HomeConfigData = response.data.data || response.data;
 
-      // 收集所有需要的视频ID
-      const allVideoIds = [
-        ...(configData.carousel || []),
-        ...(configData.hot || []),
-        ...(configData.new || []),
-        ...(configData.rank || [])
-      ];
-      
-      // 批量获取所有视频详情
-      const videoMap = await batchGetVideoDetails(allVideoIds);
-
-      // 根据配置提取对应的视频数据
-      const carousel = extractVideosByIds(configData.carousel || [], videoMap);
-      const hot = extractVideosByIds(configData.hot || [], videoMap);
-      const newList = extractVideosByIds(configData.new || [], videoMap);
-      const rank = extractVideosByIds(configData.rank || [], videoMap);
-
-      setCarouselData(carousel);
-      setHotData(hot);
-      setNewData(newList);
-      setRankData(rank);
+      // 直接使用返回的视频数据，无需再次获取详情
+      setCarouselData(configData.carousel || []);
+      setHotData(configData.hot || []);
+      setNewData(configData.new || []);
+      setRankData(configData.rank || []);
       
       // 标记配置加载成功
       setIsConfigLoaded(true);
@@ -208,6 +125,49 @@ export default function Home() {
       }
     };
   }, [user?.id]); // 依赖于 user.id
+
+  // 监听路由变化，在页面离开时清除定时器
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+        setRetryTimer(null);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden && retryTimer) {
+        // 当页面变为隐藏状态时清除定时器
+        clearTimeout(retryTimer);
+        setRetryTimer(null);
+      }
+    };
+
+    // 监听页面卸载事件
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    // 监听页面可见性变化事件
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      // 清理事件监听器
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      // 清理定时器
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+        setRetryTimer(null);
+      }
+    };
+  }, [retryTimer]); // 依赖于 retryTimer
+
+  // 监听路由路径变化，当离开home页面时清除定时器
+  useEffect(() => {
+    // 如果当前路径不是/home，说明已经离开了home页面，清除定时器
+    if (pathname !== '/home' && retryTimer) {
+      clearTimeout(retryTimer);
+      setRetryTimer(null);
+    }
+  }, [pathname, retryTimer]); // 监听pathname和retryTimer的变化
   
   useEffect(() => {
     const handleScroll = () => {

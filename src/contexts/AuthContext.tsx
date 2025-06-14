@@ -48,7 +48,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userData);
         setToken(response.data.token);
         localStorage.setItem('user', JSON.stringify(userData));
-        window.location.href = '/userpage';
       } else {
         throw new Error(response.error || '登录失败');
       }
@@ -68,7 +67,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(userData);
         setToken(response.data.token);
         localStorage.setItem('user', JSON.stringify(userData));
-        window.location.href = '/userpage';
       } else {
         throw new Error(response.error || '注册失败');
       }

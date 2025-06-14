@@ -26,7 +26,7 @@ export default function SignUp() {
 
     try {
       await register(username, password);
-      router.push('/userpage'); // 注册成功后跳转到首页
+      router.replace('/userpage'); // 注册成功后跳转到首页
     } catch (err) {
       setError(err instanceof Error ? err.message : '注册失败');
     } finally {
@@ -107,8 +107,11 @@ export default function SignUp() {
 
           <div className="text-sm text-center">
             <a
-              href="/auth/signin"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
+              onClick={(e) => {
+                e.preventDefault();
+                router.replace('/auth/signin');
+              }}
+              className="font-medium text-indigo-600 hover:text-indigo-500 cursor-pointer"
             >
               已有账号？立即登录
             </a>
