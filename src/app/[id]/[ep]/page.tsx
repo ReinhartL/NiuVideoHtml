@@ -3,6 +3,7 @@
 import VideoPlayer from '@/components/VideoPlayer';
 import UserAvatar from '@/components/UserAvatar';
 import EpisodeList from '@/components/EpisodeList';
+
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -62,7 +63,7 @@ async function fetchEpisodes(id: string, user: any): Promise<Episode[]> {
     });
 
     if (response.data.success) {
-      return response.data.data.episodes; // Adjust this based on your API response structure
+      return response.data.data.episodes || [];
     } else {
       console.error('获取剧集信息失败');
       return [];
@@ -81,10 +82,15 @@ export default function VideoPage() {
   const { user } = useAuth();
   const [videoData, setVideoData] = useState<VideoData | null>(null);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [showPaymentOptionsFromGesture, setShowPaymentOptionsFromGesture] = useState(false);
+  const [selectedEpisodeFromGesture, setSelectedEpisodeFromGesture] = useState<Episode | null>(null);
   
   useEffect(() => {
     if (user) {
       fetchEpisodes(id, user).then(setEpisodes);
+    } else {
+      // 尝试获取基本剧集信息（不需要用户权限）
+      fetchEpisodes(id, null).then(setEpisodes);
     }
   }, [id, user]);
   useEffect(() => {
@@ -148,6 +154,19 @@ export default function VideoPage() {
     // 这里可以添加逻辑来更新视频 URL
   };
 
+  // Function to handle episode change from gesture
+  const handleEpisodeChange = (episodeId: string) => {
+    console.log('通过手势切换到剧集:', episodeId);
+    router.push(`/${id}/${episodeId}`);
+  };
+
+  // Function to handle locked episode access from gesture
+  const handleLockedEpisodeAccess = (episode: Episode) => {
+    console.log('手势访问锁定剧集:', episode.title);
+    setSelectedEpisodeFromGesture(episode);
+    setShowPaymentOptionsFromGesture(true);
+  };
+
 
 
   // Render the video player and other components
@@ -155,6 +174,8 @@ export default function VideoPage() {
     <div className="fixed inset-0 bg-black overflow-hidden flex flex-col vh-100" style={{ 
       paddingBottom: 'env(safe-area-inset-bottom)'
     }}>
+
+      
       <div className="absolute top-4 left-4 text-white text-2xl z-30">
         {videoData.displayName}
       </div>
@@ -166,6 +187,10 @@ export default function VideoPage() {
             cover={videoData.cover}
             id={id}
             onEnded={handleVideoEnd}
+            episodes={episodes}
+            currentEpisodeId={ep}
+            onEpisodeChange={handleEpisodeChange}
+            onLockedEpisodeAccess={handleLockedEpisodeAccess}
           />
         ) : (
           <div className="text-white">暂无权限观看此剧集</div>
@@ -179,6 +204,12 @@ export default function VideoPage() {
         updateVideoUrl={updateVideoUrl} 
         id={id} 
         currentEpisodeId={ep}
+        externalPaymentOptions={showPaymentOptionsFromGesture}
+        externalSelectedEpisode={selectedEpisodeFromGesture}
+        onExternalPaymentClose={() => {
+          setShowPaymentOptionsFromGesture(false);
+          setSelectedEpisodeFromGesture(null);
+        }}
       />
       {/*<style jsx>{`
          .issue-button-class {
