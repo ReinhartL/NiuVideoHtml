@@ -25,12 +25,16 @@ interface Video {
 interface EpisodeListProps {
   updateVideoUrl: (url: string) => void;
   id: string; // 视频 ID
+  currentEpisodeId?: string; // 当前播放的剧集 ID
+  externalPaymentOptions?: boolean; // 外部控制的解锁选项显示状态
+  externalSelectedEpisode?: Episode | null; // 外部选择的剧集
+  onExternalPaymentClose?: () => void; // 外部解锁选项关闭回调
 }
 
 // 支付选项组件
 function PaymentOptions({ onClose, onOptionSelect, videoInfo }: any) {
   return (
-    <div className="absolute left-0 top-0 transform -translate-x-full bg-white p-4 rounded-lg shadow-lg z-50 w-64">
+    <div className="transform -translate-x-full bg-white p-4 rounded-lg shadow-lg z-50 w-64">
       <h2 className="text-xl font-bold mb-4">解锁选项</h2>
       <div className="space-y-2">
         <button 
@@ -80,10 +84,17 @@ function PaymentOptions({ onClose, onOptionSelect, videoInfo }: any) {
   );
 }
 
-export default function EpisodeList({ id, updateVideoUrl }: EpisodeListProps) {
+export default function EpisodeList({ 
+  id, 
+  updateVideoUrl, 
+  currentEpisodeId, 
+  externalPaymentOptions = false,
+  externalSelectedEpisode = null,
+  onExternalPaymentClose
+}: EpisodeListProps) {
   const router = useRouter();
   const { user, fetchUserInfo, login,registerTemp } = useAuth(); // 使用 useAuth 获取用户信息
-  const [isExpanded, setIsExpanded] = useState(true); // 控制选集列表的展开和收起状态
+  const [isExpanded, setIsExpanded] = useState(false); // 控制选集列表的展开和收起状态
   const [episodes, setEpisodes] = useState<Episode[]>([]); // 存储剧集信息
   const [videoInfo, setVideoInfo] = useState<Video | null>(null); // 存储视频信息
   const [showPaymentOptions, setShowPaymentOptions] = useState(false); // 控制支付选项的显示
@@ -319,6 +330,7 @@ export default function EpisodeList({ id, updateVideoUrl }: EpisodeListProps) {
       }
     } finally {
       setShowPaymentOptions(false);
+      onExternalPaymentClose?.(); // 关闭外部解锁选项
     }
   };
 
@@ -333,15 +345,6 @@ export default function EpisodeList({ id, updateVideoUrl }: EpisodeListProps) {
 
   return (
     <div className="fixed right-4 bottom-[15%] z-[9999] flex items-end">
-      {showPaymentOptions && videoInfo && (
-        <div className="absolute right-full bottom-0 mr-4">
-          <PaymentOptions 
-            onClose={() => setShowPaymentOptions(false)} 
-            onOptionSelect={handlePaymentOptionSelect}
-            videoInfo={videoInfo}
-          />
-        </div>
-      )}
       <div className="relative">
         <button
           onClick={() => setIsExpanded(!isExpanded)} // 切换选集列表的展开和收起状态
@@ -362,6 +365,26 @@ export default function EpisodeList({ id, updateVideoUrl }: EpisodeListProps) {
             />
           </svg>
         </button>
+
+        {(showPaymentOptions || externalPaymentOptions) && videoInfo && (
+        <div className="absolute bottom-12 w-64 z-10">
+          <PaymentOptions 
+            onClose={() => {
+              setShowPaymentOptions(false);
+              onExternalPaymentClose?.();
+            }} 
+            onOptionSelect={(option: number) => {
+              // 使用外部选择的剧集或内部选择的剧集
+              const targetEpisode = externalSelectedEpisode || selectedEpisode;
+              if (targetEpisode) {
+                setSelectedEpisode(targetEpisode);
+                handlePaymentOptionSelect(option);
+              }
+            }}
+            videoInfo={videoInfo}
+          />
+        </div>
+      )}
 
         {isExpanded && (
           <div className="absolute right-0 bottom-12 w-64 bg-white/10 backdrop-blur-sm rounded-lg shadow-lg p-4 max-h-64 overflow-y-auto">
@@ -386,26 +409,33 @@ export default function EpisodeList({ id, updateVideoUrl }: EpisodeListProps) {
               </button>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {episodes.map((episode) => (
-                <button
-                  key={episode.id}
-                  onClick={() => handleEpisodeClick(episode)} // 处理剧集点击事件
-                  className={`p-2 rounded text-center transition-colors ${
-                    episode.isLocked
-                      ? 'bg-gray-800 text-gray-400 hover:bg-gray-700' // 锁定剧集的样式
-                      : 'bg-white/10 text-white hover:bg-white/20' // 未锁定剧集的样式
-                  }`}
-                >
-                  <div className="relative">
-                    {episode.title}
-                    {episode.isLocked && (
-                      <span className="absolute -top-1 -right-1 text-xs bg-yellow-500 text-black px-1 rounded">
-                        锁定
+              {episodes.map((episode) => {
+                const isCurrentEpisode = currentEpisodeId === episode.id;
+                return (
+                  <button
+                    key={episode.id}
+                    onClick={() => handleEpisodeClick(episode)} // 处理剧集点击事件
+                    className={`p-2 rounded text-center transition-colors relative ${
+                      isCurrentEpisode
+                        ? 'bg-white/25 backdrop-blur-sm text-white border border-white/40 shadow-lg ring-1 ring-white/20' // 当前剧集样式 - 毛玻璃风格
+                        : episode.isLocked
+                        ? 'bg-gray-800 text-gray-400 hover:bg-gray-700' // 锁定剧集的样式
+                        : 'bg-white/10 text-white hover:bg-white/20' // 未锁定剧集的样式
+                    }`}
+                  >
+                    <div className="relative">
+                      <span className={isCurrentEpisode ? 'font-semibold text-shadow' : ''}>
+                        {episode.title}
                       </span>
-                    )}
-                  </div>
-                </button>
-              ))}
+                      {episode.isLocked && (
+                        <span className="absolute -top-1 -right-1 text-xs bg-yellow-500 text-black px-1 rounded">
+                          锁定
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
