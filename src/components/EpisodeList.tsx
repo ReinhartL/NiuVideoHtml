@@ -332,9 +332,9 @@ export default function EpisodeList({ id, updateVideoUrl }: EpisodeListProps) {
   };
 
   return (
-    <div className="fixed right-4 top-1/2 -translate-y-1/2 z-[9999] flex items-start">
+    <div className="fixed right-4 bottom-[15%] z-[9999] flex items-end">
       {showPaymentOptions && videoInfo && (
-        <div className="absolute right-full mr-4">
+        <div className="absolute right-full bottom-0 mr-4">
           <PaymentOptions 
             onClose={() => setShowPaymentOptions(false)} 
             onOptionSelect={handlePaymentOptionSelect}
@@ -345,7 +345,7 @@ export default function EpisodeList({ id, updateVideoUrl }: EpisodeListProps) {
       <div className="relative">
         <button
           onClick={() => setIsExpanded(!isExpanded)} // 切换选集列表的展开和收起状态
-          className="fixed right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+          className="fixed right-4 bottom-[15%] w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/20 transition-colors"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -364,7 +364,7 @@ export default function EpisodeList({ id, updateVideoUrl }: EpisodeListProps) {
         </button>
 
         {isExpanded && (
-          <div className="absolute right-0 mt-2 w-64 bg-white/10 backdrop-blur-sm rounded-lg shadow-lg p-4 max-h-64 overflow-y-auto">
+          <div className="absolute right-0 bottom-12 w-64 bg-white/10 backdrop-blur-sm rounded-lg shadow-lg p-4 max-h-64 overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-white">选集列表</h2>
               <button
