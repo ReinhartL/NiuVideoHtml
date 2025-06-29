@@ -26,9 +26,6 @@ interface EpisodeListProps {
   updateVideoUrl: (url: string) => void;
   id: string; // 视频 ID
   currentEpisodeId?: string; // 当前播放的剧集 ID
-  externalPaymentOptions?: boolean; // 外部控制的解锁选项显示状态
-  externalSelectedEpisode?: Episode | null; // 外部选择的剧集
-  onExternalPaymentClose?: () => void; // 外部解锁选项关闭回调
 }
 
 // 支付选项组件
@@ -87,10 +84,7 @@ function PaymentOptions({ onClose, onOptionSelect, videoInfo }: any) {
 export default function EpisodeList({ 
   id, 
   updateVideoUrl, 
-  currentEpisodeId, 
-  externalPaymentOptions = false,
-  externalSelectedEpisode = null,
-  onExternalPaymentClose
+  currentEpisodeId
 }: EpisodeListProps) {
   const router = useRouter();
   const { user, fetchUserInfo, login,registerTemp } = useAuth(); // 使用 useAuth 获取用户信息
@@ -330,7 +324,6 @@ export default function EpisodeList({
       }
     } finally {
       setShowPaymentOptions(false);
-      onExternalPaymentClose?.(); // 关闭外部解锁选项
     }
   };
 
@@ -366,21 +359,11 @@ export default function EpisodeList({
           </svg>
         </button>
 
-        {(showPaymentOptions || externalPaymentOptions) && videoInfo && (
+        {showPaymentOptions && videoInfo && (
         <div className="absolute bottom-12 w-64 z-10">
           <PaymentOptions 
-            onClose={() => {
-              setShowPaymentOptions(false);
-              onExternalPaymentClose?.();
-            }} 
-            onOptionSelect={(option: number) => {
-              // 使用外部选择的剧集或内部选择的剧集
-              const targetEpisode = externalSelectedEpisode || selectedEpisode;
-              if (targetEpisode) {
-                setSelectedEpisode(targetEpisode);
-                handlePaymentOptionSelect(option);
-              }
-            }}
+            onClose={() => setShowPaymentOptions(false)} 
+            onOptionSelect={handlePaymentOptionSelect}
             videoInfo={videoInfo}
           />
         </div>

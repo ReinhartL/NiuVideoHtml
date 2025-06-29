@@ -3,7 +3,6 @@
 import VideoPlayer from '@/components/VideoPlayer';
 import UserAvatar from '@/components/UserAvatar';
 import EpisodeList from '@/components/EpisodeList';
-import VerticalSlider from '@/components/VerticalSlider';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -82,8 +81,6 @@ export default function VideoPage() {
   const { user } = useAuth();
   const [videoData, setVideoData] = useState<VideoData | null>(null);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
-  const [showPaymentOptionsFromSlider, setShowPaymentOptionsFromSlider] = useState(false);
-  const [selectedEpisodeFromSlider, setSelectedEpisodeFromSlider] = useState<Episode | null>(null);
   
   useEffect(() => {
     if (user) {
@@ -151,18 +148,7 @@ export default function VideoPage() {
     // 这里可以添加逻辑来更新视频 URL
   };
 
-  // Function to handle episode change from vertical slider
-  const handleEpisodeChange = (episodeId: string) => {
-    console.log('通过滑动切换到剧集:', episodeId);
-    // 这里可以添加额外的剧集切换逻辑
-  };
 
-  // Function to handle locked episode access from vertical slider
-  const handleLockedEpisodeAccess = (episode: Episode) => {
-    console.log('滑动访问锁定剧集:', episode.title);
-    setSelectedEpisodeFromSlider(episode);
-    setShowPaymentOptionsFromSlider(true);
-  };
 
   // Render the video player and other components
   return (
@@ -186,28 +172,13 @@ export default function VideoPage() {
         )}
       </div>
       
-      {/* 竖屏滑动组件 */}
-      {episodes.length > 0 && (
-        <VerticalSlider
-          episodes={episodes}
-          currentEpisodeId={ep}
-          videoId={id}
-          onEpisodeChange={handleEpisodeChange}
-          onLockedEpisodeAccess={handleLockedEpisodeAccess}
-        />
-      )}
+
       
       <UserAvatar />
       <EpisodeList 
         updateVideoUrl={updateVideoUrl} 
         id={id} 
         currentEpisodeId={ep}
-        externalPaymentOptions={showPaymentOptionsFromSlider}
-        externalSelectedEpisode={selectedEpisodeFromSlider}
-        onExternalPaymentClose={() => {
-          setShowPaymentOptionsFromSlider(false);
-          setSelectedEpisodeFromSlider(null);
-        }}
       />
       {/*<style jsx>{`
          .issue-button-class {
