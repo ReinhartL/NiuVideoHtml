@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ViewportFix from "@/components/ViewportFix";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -24,6 +25,7 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased">
+        <ViewportFix />
         <AuthProvider>
           {children}
         </AuthProvider>

@@ -29,18 +29,23 @@ body {
 }
 
 /* Safari 浏览器适配 */
+:root {
+  --vh: 1vh;
+  --full-height: 100vh;
+}
+
+/* Safari动态视窗高度修复 */
 @supports (-webkit-touch-callout: none) {
   /* Safari特有的样式 */
   html, body {
     height: 100%;
-    height: 100dvh;
+    height: var(--full-height);
     overflow: hidden;
   }
   
   /* 处理Safari的安全区域 */
   .safari-fullscreen {
-    height: 100vh;
-    height: 100dvh;
+    height: var(--full-height);
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);
@@ -48,10 +53,22 @@ body {
   }
 }
 
+/* 动态视窗高度类 */
+.vh-100 {
+  height: 100vh;
+  height: var(--full-height);
+}
+
+.min-vh-100 {
+  min-height: 100vh;
+  min-height: var(--full-height);
+}
+
 /* 支持动态视窗单位的浏览器 */
 @supports (height: 100dvh) {
   .full-height {
     height: 100dvh;
+    height: var(--full-height);
   }
 }
 
@@ -59,6 +76,7 @@ body {
 @supports not (height: 100dvh) {
   .full-height {
     height: 100vh;
+    height: var(--full-height);
   }
 }
 

@@ -75,11 +75,7 @@ export default function VideoPlayer({ initialUrl, title, cover, id, onEnded }: V
 
 
   return (
-    <div className="w-screen relative full-height" style={{ 
-      height: '100dvh', 
-      minHeight: '100vh',
-      maxHeight: '100dvh'
-    }}>
+    <div className="w-screen relative vh-100">
       {/* 仅在 cover 存在时显示封面图片 */}
       {cover && (
         <img src={cover} alt="封面" className="absolute inset-0 w-full h-full object-cover z-0" />

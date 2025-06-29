@@ -166,10 +166,7 @@ export default function VideoPage() {
 
   // Render the video player and other components
   return (
-    <div className="fixed inset-0 bg-black overflow-hidden flex flex-col full-height" style={{ 
-      height: '100dvh', 
-      minHeight: '100vh',
-      maxHeight: '100dvh',
+    <div className="fixed inset-0 bg-black overflow-hidden flex flex-col vh-100" style={{ 
       paddingBottom: 'env(safe-area-inset-bottom)'
     }}>
       <div className="absolute top-4 left-4 text-white text-2xl z-30">
