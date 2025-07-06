@@ -181,6 +181,16 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // 格式化链接，去掉第二个'/'之后的内容
+  const formatLink = (link: string): string => {
+    const parts = link.split('/');
+    if (parts.length >= 3) {
+      // 保留前两个部分：空字符串和ID
+      return `/${parts[1]}`;
+    }
+    return link;
+  };
+
   // 渲染视频列表
   const renderVideoList = (data: ProcessedVideoItem[], defaultContent: React.ReactNode, listType: string) => {
     if (loading) {
@@ -227,8 +237,9 @@ export default function Home() {
         <div className="grid grid-cols-3 gap-4">
           {data.map((item, index) => {
             const tagConfig = getTagConfig(listType, index);
+            const formattedLink = formatLink(item.link);
             return (
-              <a key={`${listType}-${item.id}-${index}`} href={item.link} className="group">
+              <a key={`${listType}-${item.id}-${index}`} href={formattedLink} className="group">
                 <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                   <div className="relative">
                     <img 
@@ -287,7 +298,7 @@ export default function Home() {
           ) : carouselData.length > 0 ? (
             carouselData.map((item, index) => (
               <div key={`carousel-${item.id}-${index}`}>
-                <a href={item.link} className="block relative">
+                <a href={formatLink(item.link)} className="block relative">
                   <img 
                     src={item.cover} 
                     alt={item.title} 

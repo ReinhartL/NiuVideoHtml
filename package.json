@@ -24,7 +24,8 @@
     "react-error-boundary": "^5.0.0",
     "react-hot-toast": "^2.5.2",
     "react-slick": "^0.30.3",
-    "slick-carousel": "^1.8.1"
+    "slick-carousel": "^1.8.1",
+    "xgplayer": "^3.0.22"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
