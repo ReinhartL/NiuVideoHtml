@@ -4,7 +4,7 @@ import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
+
 
 interface Episode {
   id: string;
@@ -120,12 +120,9 @@ const SimpleEpisodeList = forwardRef<SimpleEpisodeListRef, SimpleEpisodeListProp
       if (response.data.success) {
         setEpisodes(response.data.data.episodes);
         setVideoInfo(response.data.data.video);
-      } else {
-        toast.error('获取剧集信息失败');
       }
     } catch (error) {
       console.error('获取剧集信息时发生错误:', error);
-      toast.error('获取剧集信息失败');
     } finally {
       setLoading(false);
     }
@@ -188,7 +185,7 @@ const SimpleEpisodeList = forwardRef<SimpleEpisodeListRef, SimpleEpisodeListProp
             window.location.reload();
           }
         } catch (error) {
-          toast.error('注册或登录失败');
+          console.error('注册或登录失败:', error);
         }
       }
       return;
@@ -231,7 +228,6 @@ const SimpleEpisodeList = forwardRef<SimpleEpisodeListRef, SimpleEpisodeListProp
 
                 if (statusResponse.data.success && statusResponse.data.data.status === 2) {
                   clearInterval(pollOrderStatus);
-                  toast.success('支付成功！');
                   
                   // 解锁单集
                   const unlockResponse = await axios.post(`${BASE_URL}/unlock/single-episode`, {
@@ -243,7 +239,6 @@ const SimpleEpisodeList = forwardRef<SimpleEpisodeListRef, SimpleEpisodeListProp
                   });
 
                   if (unlockResponse.data.success) {
-                    toast.success('解锁成功！');
                     fetchEpisodes();
                   }
                 }
@@ -254,7 +249,6 @@ const SimpleEpisodeList = forwardRef<SimpleEpisodeListRef, SimpleEpisodeListProp
 
             setTimeout(() => {
               clearInterval(pollOrderStatus);
-              toast.error('支付超时，请重试');
             }, 60000);
           }
           break;
@@ -285,10 +279,7 @@ const SimpleEpisodeList = forwardRef<SimpleEpisodeListRef, SimpleEpisodeListProp
         });
 
         if (response.data.success) {
-          toast.success('解锁成功！');
           fetchEpisodes();
-        } else {
-          toast.error('解锁失败');
         }
       }
     } catch (error) {
@@ -298,7 +289,7 @@ const SimpleEpisodeList = forwardRef<SimpleEpisodeListRef, SimpleEpisodeListProp
           router.push('/rechargepage');
         }
       } else {
-        toast.error('操作失败');
+        console.error('操作失败');
       }
     } finally {
       setShowPaymentOptions(false);

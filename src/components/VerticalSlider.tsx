@@ -25,10 +25,18 @@ export default function VerticalSlider({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0); // 保留用于视觉反馈
   const [hasUserInteracted, setHasUserInteracted] = useState(false); // 跟踪用户是否已经交互
+  const [showFirstTimeUI, setShowFirstTimeUI] = useState(true); // 跟踪是否显示首次进入UI
   const containerRef = useRef<HTMLDivElement>(null);
   const startY = useRef<number>(0);
   const startTime = useRef<number>(0);
   const translateY = useRef<number>(0);
+
+  // 监听 initialIndex 的变化，同步更新 currentIndex
+  useEffect(() => {
+    if (initialIndex !== currentIndex) {
+      setCurrentIndex(initialIndex);
+    }
+  }, [initialIndex, currentIndex]);
 
   // 获取当前显示的三个项目
   const getVisibleItems = useCallback(() => {
@@ -64,41 +72,40 @@ export default function VerticalSlider({
                 // 使用原生video元素和XGPlayer双重保险
                 const videoElement = playerContainer.querySelector('video');
                 if (videoElement) {
-
-                  
                   // 确保视频已加载
                   if (videoElement.readyState >= 2) { // HAVE_CURRENT_DATA
                     // 优先使用XGPlayer API，这样可以正确触发内部状态管理
                     xgplayerInstance.play();
                     
-                                         // 延迟后手动触发inactive状态
-                     setTimeout(() => {
-                       const xgplayerContainer = playerContainer.querySelector('.xgplayer');
-                       if (xgplayerContainer && !xgplayerContainer.classList.contains('xgplayer-inactive')) {
-                         xgplayerContainer.classList.add('xgplayer-inactive');
-                       }
-                     }, 3000); // 3秒后隐藏控制条
-                                     } else {
-                     // 等待视频加载
-                     const onCanPlay = () => {
-                       xgplayerInstance.play();
-                       
-                       // 延迟后手动触发inactive状态
-                       setTimeout(() => {
-                         const xgplayerContainer = playerContainer.querySelector('.xgplayer');
-                         if (xgplayerContainer && !xgplayerContainer.classList.contains('xgplayer-inactive')) {
-                           xgplayerContainer.classList.add('xgplayer-inactive');
-                         }
-                       }, 3000);
-                       
-                       videoElement.removeEventListener('canplay', onCanPlay);
-                     };
-                     videoElement.addEventListener('canplay', onCanPlay);
-                   }
+                    // 延迟后手动触发inactive状态
+                    setTimeout(() => {
+                      const xgplayerContainer = playerContainer.querySelector('.xgplayer');
+                      if (xgplayerContainer && !xgplayerContainer.classList.contains('xgplayer-inactive')) {
+                        xgplayerContainer.classList.add('xgplayer-inactive');
+                      }
+                    }, 3000);
+                  } else {
+                    // 等待视频加载
+                    const onCanPlay = () => {
+                      xgplayerInstance.play();
+                      
+                      // 延迟后手动触发inactive状态
+                      setTimeout(() => {
+                        const xgplayerContainer = playerContainer.querySelector('.xgplayer');
+                        if (xgplayerContainer && !xgplayerContainer.classList.contains('xgplayer-inactive')) {
+                          xgplayerContainer.classList.add('xgplayer-inactive');
+                        }
+                      }, 3000);
+                      
+                      videoElement.removeEventListener('canplay', onCanPlay);
+                    };
+                    videoElement.addEventListener('canplay', onCanPlay);
+                  }
                 }
-                             } catch (error) {
-                 // 自动播放失败
-               }
+              } catch (error) {
+                // 自动播放失败
+                console.error('自动播放失败:', error);
+              }
             }
           } else {
             // 非当前视频：暂停
@@ -108,9 +115,10 @@ export default function VerticalSlider({
               if (videoElement) {
                 videoElement.pause();
               }
-                         } catch (error) {
-               // 暂停失败
-             }
+            } catch (error) {
+              // 暂停失败
+              console.error('暂停失败:', error);
+            }
           }
         }
       }
@@ -159,10 +167,11 @@ export default function VerticalSlider({
         startY.current = e.touches[0].clientY;
         startTime.current = Date.now();
         
-                  // 记录用户交互
-          if (!hasUserInteracted) {
-            setHasUserInteracted(true);
-          }
+        // 记录用户交互
+        if (!hasUserInteracted) {
+          setHasUserInteracted(true);
+          setShowFirstTimeUI(false);
+        }
       }
     };
 
@@ -208,6 +217,7 @@ export default function VerticalSlider({
           // 记录用户交互
           if (!hasUserInteracted) {
             setHasUserInteracted(true);
+            setShowFirstTimeUI(false);
           }
           
           // 不要阻止事件传播，让播放器处理点击
@@ -244,6 +254,7 @@ export default function VerticalSlider({
       // 记录用户交互
       if (!hasUserInteracted) {
         setHasUserInteracted(true);
+        setShowFirstTimeUI(false);
       }
     };
 
@@ -279,21 +290,22 @@ export default function VerticalSlider({
       const timer = setTimeout(() => {
         updatePlaybackState();
         
-                 // 额外的检查：确保当前视频确实在播放
-         setTimeout(() => {
-           const currentItem = visibleItems.find(item => item.position === 0);
-           if (currentItem) {
-             const playerContainer = document.querySelector(`[data-player-id="${currentItem.id}"]`);
-             if (playerContainer) {
-               const videoElement = playerContainer.querySelector('video');
-               if (videoElement && videoElement.paused) {
-                 videoElement.play().catch(err => {
-                   // 重试播放失败
-                 });
-               }
-             }
-           }
-         }, 500);
+        // 额外的检查：确保当前视频确实在播放
+        setTimeout(() => {
+          const currentItem = visibleItems.find(item => item.position === 0);
+          if (currentItem) {
+            const playerContainer = document.querySelector(`[data-player-id="${currentItem.id}"]`);
+            if (playerContainer) {
+              const videoElement = playerContainer.querySelector('video');
+              if (videoElement && videoElement.paused) {
+                videoElement.play().catch(err => {
+                  // 重试播放失败
+                  console.error('重试播放失败:', err);
+                });
+              }
+            }
+          }
+        }, 500);
       }, 50);
       return () => clearTimeout(timer);
     }
@@ -325,6 +337,7 @@ export default function VerticalSlider({
         // 记录用户交互
         if (!hasUserInteracted) {
           setHasUserInteracted(true);
+          setShowFirstTimeUI(false);
         }
         
         handleSwipeToNext();
@@ -334,6 +347,7 @@ export default function VerticalSlider({
         // 记录用户交互
         if (!hasUserInteracted) {
           setHasUserInteracted(true);
+          setShowFirstTimeUI(false);
         }
         
         handleSwipeToPrevious();
@@ -344,8 +358,46 @@ export default function VerticalSlider({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSwipeToNext, handleSwipeToPrevious, hasUserInteracted]);
 
+  // 处理首次播放按钮点击
+  const handleFirstPlay = () => {
+    setShowFirstTimeUI(false);
+    setHasUserInteracted(true);
+    
+    // 立即开始播放当前视频
+    const currentItem = visibleItems.find(item => item.position === 0);
+    if (currentItem) {
+      const playerContainer = document.querySelector(`[data-player-id="${currentItem.id}"]`);
+      if (playerContainer) {
+        const xgplayerInstance = (playerContainer as any).xgplayerInstance;
+        if (xgplayerInstance) {
+          xgplayerInstance.play();
+        }
+      }
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black overflow-hidden">
+      {/* 播放按钮动画样式 */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @keyframes pause-animation-1d1d9106 {
+            0% {
+              opacity: 0;
+              transform: scale(2);
+            }
+            100% {
+              transform: scale(1.2);
+              opacity: 0.5;
+            }
+          }
+          
+          .play-button-animated {
+            animation: pause-animation-1d1d9106 0.2s linear;
+          }
+        `
+      }} />
+      
       <div
         ref={containerRef}
         className="relative w-full h-full transition-transform duration-300"
@@ -382,7 +434,47 @@ export default function VerticalSlider({
         ))}
       </div>
 
-
+      {/* 首次进入时的cover和播放按钮 */}
+      {showFirstTimeUI && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black">
+          {/* 当前视频的cover */}
+          {visibleItems.find(item => item.position === 0)?.cover && (
+            <img 
+              src={visibleItems.find(item => item.position === 0)?.cover} 
+              alt="视频封面"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )}
+          
+          {/* 播放按钮 */}
+          <div 
+            className="relative z-40 w-24 h-24 rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-all duration-300 play-button-animated"
+            onClick={handleFirstPlay}
+            style={{
+              WebkitTapHighlightColor: 'transparent',
+              userSelect: 'none',
+              WebkitUserSelect: 'none'
+            }}
+          >
+            {/* 使用提供的SVG播放图标 */}
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              xmlnsXlink="http://www.w3.org/1999/xlink" 
+              aria-hidden="true" 
+              role="img" 
+              className="text-white/40" 
+              width="64" 
+              height="64" 
+              viewBox="0 0 28 28"
+            >
+              <path 
+                fill="currentColor" 
+                d="M10.138 3.382C8.304 2.31 6 3.632 6 5.756v16.489c0 2.123 2.304 3.445 4.138 2.374l14.697-8.59c1.552-.907 1.552-3.15 0-4.057z"
+              />
+            </svg>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
